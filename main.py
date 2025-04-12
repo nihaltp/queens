@@ -57,8 +57,10 @@ class solver:
         pygame.font.init()
         self.font = pygame.font.SysFont(None, 28)
         
-        self.queen_image = pygame.image.load("pieces/queen.png").convert_alpha()
-        self.queen_image = pygame.transform.scale(self.queen_image, (self.square_width, self.square_width))
+        self.queen_b = pygame.image.load("pieces/queen_b.png").convert_alpha()
+        self.queen_w = pygame.image.load("pieces/queen_w.png").convert_alpha()
+        self.queen_b = pygame.transform.scale(self.queen_b, (self.square_width, self.square_width))
+        self.queen_w = pygame.transform.scale(self.queen_w, (self.square_width, self.square_width))
         
         self.delay : int = 0.01
         
@@ -160,7 +162,7 @@ class solver:
         
         if queen:
             # Draw the queen
-            self.screen.blit(self.queen_image, square_rect.topleft)
+            self.screen.blit(self.queen_b if (row + column) % 2 == 0 else self.queen_w, square_rect.topleft)
     
     # MARK: handle_events
     def handle_events(self) -> None:
