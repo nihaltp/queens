@@ -71,7 +71,7 @@ class solver:
         self.queen_b = pygame.transform.scale(self.queen_b, (self.square_width, self.square_width))
         self.queen_w = pygame.transform.scale(self.queen_w, (self.square_width, self.square_width))
         
-        self.delay : float = 0.01
+        self.delay = min(0.01, 0.3 * (0.5 ** self.board_size))
         
         self.screen.fill(self.BACKGROUND)  # draw the background
         self.game()
