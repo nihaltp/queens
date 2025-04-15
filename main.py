@@ -1,4 +1,3 @@
-
 """
     N Queens solver
     
@@ -6,6 +5,7 @@
     GitHub: https://github.com/nihaltp
     LinkedIn: https://www.linkedin.com/in/nihal-tp
 """
+
 import os
 
 # Hide the Pygame support prompt
@@ -37,6 +37,7 @@ class solver:
         self.BACKGROUND : tuple = (135, 206, 250)
         self.WHITE      : tuple = (255, 255, 255)
         self.BLACK      : tuple = (0, 0, 0)
+        self.semi_red   : tuple = (255, 0, 0, 150)  # RGBA
         
         # Create the Pygame window for Getting Board Size
         self.screen = pygame.display.set_mode((self.screen_size, self.screen_size//4))
@@ -129,12 +130,12 @@ class solver:
         # Draw each square based on sensor value
         for row in range(self.board_size):
             for column in range(self.board_size):
-                self.draw_square(row, column, True if self.board[row] == column else False)
+                self.draw_square(row, column)
                 pygame.display.flip()
                 sleep(self.delay)  # Delay for visual effect
     
     # MARK: draw_square
-    def draw_square(self, row: int, column: int, queen: bool) -> None:
+    def draw_square(self, row: int, column: int) -> None:
         """Draw individual sensor squares."""
         color: tuple = self.WHITE if ((row + column) % 2) == 0 else self.BLACK
         
@@ -147,9 +148,30 @@ class solver:
         )
         pygame.draw.rect(self.screen, color, square_rect)
         
-        if queen:
+        if self.board[row] == column:
             # Draw the queen
             self.screen.blit(self.queen_b if (row + column) % 2 == 0 else self.queen_w, square_rect.topleft)
+        
+        self.is_under_threat(row, column, square_rect)
+    
+    # MARK: is_under_threat
+    def is_under_threat(self, row: int, column: int, square_rect: pygame.Rect) -> bool:
+        """Check if the (row, column) is threatened by any existing queen."""
+        for r in range(row):
+            col = self.board[r]
+            if col == -1:
+                continue
+            if col == column or abs(col - column) == abs(r - row):
+                self.draw_threat(square_rect)
+                return True
+        return False
+    
+    # MARK: draw_threat
+    def draw_threat(self, square_rect: pygame.Rect) -> None:
+        # Draw the threat indicator
+        s = pygame.Surface((self.square_width, self.square_width), pygame.SRCALPHA)
+        s.fill(self.semi_red)
+        self.screen.blit(s, square_rect.topleft)
     
     # MARK: handle_events
     def handle_events(self) -> None:
