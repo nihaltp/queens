@@ -47,7 +47,8 @@ class solver:
         pygame.font.init()
         self.FONT = pygame.font.SysFont(None, 28)
         
-        self.board_size = self.input_text("Size of the board (N x N): ", (self.square_width, self.square_width), 12)
+        self.board_size_limit: int = 12  # Maximum board size
+        self.board_size = self.input_num("Size of the board (N x N): ", (self.square_width, self.square_width), self.board_size_limit)
         self.screen_size = self.square_width * self.board_size + 2 * self.square_width  # recalculate the screen size based on the new board_size
         
         # Create an empty 8x8 matrix
@@ -119,8 +120,8 @@ class solver:
         """
         
         for i in range(current_col):
-            if (self.board[i] == self.board[current_col] or
-                abs(self.board[i] - self.board[current_col]) == abs(i - current_col)):
+            if (self.board[i] == self.board[current_col] or  # Check for column
+                abs(self.board[i] - self.board[current_col]) == abs(i - current_col)):  # Check for diagonal
                 return False
         return True
     
@@ -191,8 +192,8 @@ class solver:
                     self.delay /= 2
                     print(f"\033[93mDelay: {self.delay}\033[0m")
     
-    # MARK: input_text
-    def input_text(self, prompt: str, position: tuple, limit: int) -> int:
+    # MARK: input_num
+    def input_num(self, prompt: str, position: tuple, limit: int) -> int:
         input_active: bool = True
         input_text: list = []
         
@@ -205,7 +206,9 @@ class solver:
                         input_active = False
                     elif event.key == pygame.K_BACKSPACE:
                         input_text = input_text[:-1]
-                    elif len(input_text) < 2:  # Limit the length of the text
+                    elif len(input_text) < len(str(limit)) and event.unicode.isdigit():
+                        # Limit the length of the text
+                        # and check if the input is a digit
                         input_text.append(event.unicode)
             
             self.screen.fill(self.BACKGROUND)
@@ -220,7 +223,7 @@ class solver:
         
         current_num: int = int(current_text)
         while current_num > limit:
-            current_num = self.input_text(prompt + f" limit is {limit}", position, limit)
+            current_num = self.input_num(prompt + f" limit is {limit}", position, limit)
         return current_num
     
     # MARK: quit_game
