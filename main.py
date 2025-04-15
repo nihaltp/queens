@@ -62,6 +62,7 @@ class solver:
         self.board_y : int = (self.screen_size - self.board_size * self.square_width) // 2
         
         # Create the Pygame window for Queens Solver
+        os.environ['SDL_VIDEO_CENTERED'] = '1'  # to center the window
         self.screen = pygame.display.set_mode((self.screen_size, self.screen_size))
         pygame.display.set_caption(f"{self.board_size} Queens Solver")
         
@@ -111,7 +112,6 @@ class solver:
     
     # MARK: is_valid_placement
     def is_valid_placement(self, current_col: int) -> bool:
-        # [] Mark X on the squares that are not usable
         """Check if the current queen placement is valid.
         
         Returns:
