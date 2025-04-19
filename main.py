@@ -34,10 +34,22 @@ class solver:
         self.screen_size  : int = self.square_width * self.board_size + 2 * self.square_width
         
         # Colors
-        self.BACKGROUND : tuple = (135, 206, 250)
-        self.WHITE      : tuple = (255, 255, 255)
-        self.BLACK      : tuple = (0, 0, 0)
-        self.semi_red   : tuple = (255, 0, 0, 150)  # RGBA
+        self.BACKGROUND   : tuple = (135, 206, 250)
+        self.WHITE        : tuple = (255, 255, 255)
+        self.BLACK        : tuple = (0, 0, 0)
+        self.SEMI_RED     : tuple = (255, 0, 0, 150)  # RGBA
+        self.BUTTON_COLOR : tuple = (70, 130, 180)
+        
+        # Button properties
+        self.BUTTON_WIDTH: int = 200
+        self.BUTTON_HEIGHT: int = self.BUTTON_WIDTH // 4
+        self.BUTTON_MARGIN_X: int = self.BUTTON_WIDTH // 4
+        self.BUTTON_MARGIN_Y: int = self.BUTTON_HEIGHT // 2
+        
+        self.BUTTON_POSITIONS = {
+            "Simulation": (25, 50),
+            "Manual": (25 + self.BUTTON_WIDTH + 25, 50),
+        }
         
         # Create the Pygame window for Getting Board Size
         self.screen = pygame.display.set_mode((self.screen_size, self.screen_size//4))
@@ -49,6 +61,7 @@ class solver:
         
         self.board_size_limit: int = 12  # Maximum board size
         self.board_size = self.input_num("Size of the board (N x N): ", (self.square_width, self.square_width), self.board_size_limit)
+        
         self.screen_size = self.square_width * self.board_size + 2 * self.square_width  # recalculate the screen size based on the new board_size
         
         # Create an empty 8x8 matrix
@@ -79,6 +92,14 @@ class solver:
     
     # MARK: game
     def game(self) -> None:
+        match self.game_mode:
+            case "Simulation":
+                self.simulation()
+            case "Manual":
+                pass
+    
+    # MARK: simulation
+    def simulation(self) -> None:
         print(f"\033[92mStarting the {self.board_size}-Queens solver...\033[0m")
         col: int = 0
         self.draw_board()
@@ -171,7 +192,7 @@ class solver:
     def draw_threat(self, square_rect: pygame.Rect) -> None:
         # Draw the threat indicator
         s = pygame.Surface((self.square_width, self.square_width), pygame.SRCALPHA)
-        s.fill(self.semi_red)
+        s.fill(self.SEMI_RED)
         self.screen.blit(s, square_rect.topleft)
     
     # MARK: handle_events
@@ -225,6 +246,45 @@ class solver:
         while current_num > limit:
             current_num = self.input_num(prompt + f" limit is {limit}", position, limit)
         return current_num
+    
+    # MARK: get_mode
+    def get_mode(self) -> str:
+        """Get the game mode"""
+        self.screen.fill(self.BACKGROUND)
+        self.draw_buttons()
+        
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit_game()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # return if it is not None
+                    mode = self.handle_buttons()
+                    if mode is not None:
+                        return mode
+    
+    # MARK: draw_buttons
+    def draw_buttons(self) -> None:
+        """Draw the buttons on the screen."""
+        for button_name in self.BUTTON_POSITIONS.keys():
+            # Draw the buttons
+            button_position = self.BUTTON_POSITIONS[button_name]
+            button = pygame.Rect(button_position, (self.BUTTON_WIDTH, self.BUTTON_HEIGHT))
+            pygame.draw.rect(self.screen, self.BUTTON_COLOR, button)
+            
+            text = self.FONT.render(button_name, True, self.BLACK)
+            text_rect = text.get_rect(center=(button_position[0] + self.BUTTON_MARGIN_X, button_position[1] + self.BUTTON_MARGIN_Y))
+            self.screen.blit(text, text_rect)
+        pygame.display.flip()
+    
+    # MARK: handle_buttons
+    def handle_buttons(self) -> str:
+        """Handle button clicks."""
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for button_name, pos in self.BUTTON_POSITIONS.items():
+            if pos[0] <= mouse_x <= pos[0] + self.BUTTON_WIDTH and pos[1] <= mouse_y <= pos[1] + self.BUTTON_HEIGHT:
+                return button_name
+        return ""
     
     # MARK: quit_game
     def quit_game(self) -> None:
