@@ -27,7 +27,7 @@ class solver:
             pygame.init() # Initialize Pygame
         except pygame.error as e:
             print(f"Error initializing Pygame: {e}")
-            sys.exit(1)
+            self.quit_game(1)
         
         self.board_size   : int = 8  # for making the inital window
         self.square_width : int = 50
@@ -61,6 +61,9 @@ class solver:
         
         self.board_size_limit: int = 12  # Maximum board size
         self.board_size = self.input_num("Size of the board (N x N): ", (self.square_width, self.square_width), self.board_size_limit)
+        
+        self.game_mode: str = self.get_mode()
+        print(f"\033[92mGame mode selected: {self.game_mode}\033[0m")
         
         self.screen_size = self.square_width * self.board_size + 2 * self.square_width  # recalculate the screen size based on the new board_size
         
@@ -200,12 +203,10 @@ class solver:
         """Handle user input events."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.quit_game()
+                self.quit_game(0)
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.quit_game()
-                elif event.key == pygame.K_q:
-                    self.quit_game()
+                if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                    self.quit_game(0)
                 elif event.key == pygame.K_UP:
                     self.delay *= 2
                     print(f"\033[93mDelay: {self.delay}\033[0m")
@@ -221,9 +222,11 @@ class solver:
         while input_active:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.quit_game()
+                    self.quit_game(0)
                 elif event.type == pygame.KEYDOWN:
-                    if event.unicode == "\r" and input_text:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                        self.quit_game(0)
+                    elif event.unicode == "\r" and input_text:
                         input_active = False
                     elif event.key == pygame.K_BACKSPACE:
                         input_text = input_text[:-1]
@@ -254,10 +257,9 @@ class solver:
         self.draw_buttons()
         
         while True:
+            self.handle_events()
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.quit_game()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONDOWN:
                     # return if it is not None
                     mode = self.handle_buttons()
                     if mode is not None:
@@ -287,11 +289,15 @@ class solver:
         return ""
     
     # MARK: quit_game
-    def quit_game(self) -> None:
+    def quit_game(self, error: int = 0) -> None:
         """Exit the Pygame window."""
-        print(f"\033[92mSolutions found \033[94m({len(self.answers)})\033[92m: \033[93m{self.answers}\033[0m")
+        if hasattr(self, 'answers') and self.answers:
+            print(f"\033[92mSolutions found \033[94m({len(self.answers)})\033[92m: \033[93m{self.answers}\033[0m")
+        elif hasattr(self, 'answers'):
+            print("\033[91mNo solutions were found.\033[0m")
+        print("\033[93mExiting the game...\033[0m")
         pygame.quit()
-        sys.exit(0)
+        sys.exit(error)
 
 
 if __name__ == "__main__":
