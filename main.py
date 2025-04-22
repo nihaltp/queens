@@ -12,7 +12,6 @@ import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import sys
-from time import sleep
 
 try:
     import pygame
@@ -30,8 +29,8 @@ class solver:
             self.quit_game(1)
         
         self.board_size   : int = 8  # for making the inital window
-        self.square_width : int = 50
-        self.screen_size  : int = self.square_width * self.board_size + 2 * self.square_width
+        self.SQUARE_WIDTH : int = 50
+        self.screen_size  : int = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH
         
         # Colors
         self.BACKGROUND   : tuple = (135, 206, 250)
@@ -60,15 +59,15 @@ class solver:
         pygame.font.init()
         self.FONT = pygame.font.SysFont(None, 28)
         
-        self.board_size_limit: int = 12  # Maximum board size
-        self.board_size = self.input_num("Size of the board (N x N): ", (self.square_width, self.square_width), self.board_size_limit)
+        self.BOARD_SIZE_LIMIT: int = 12  # Maximum board size
+        self.board_size = self.input_num("Size of the board (N x N): ", (self.SQUARE_WIDTH, self.SQUARE_WIDTH), self.BOARD_SIZE_LIMIT)
         
         self.GAME_MODE: str = self.get_mode()
         print(f"\033[92mGame mode selected: {self.GAME_MODE}\033[0m")
         
-        self.screen_size = self.square_width * self.board_size + 2 * self.square_width  # recalculate the screen size based on the new board_size
+        self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH  # recalculate the screen size based on the new board_size
         
-        # Create an empty 8x8 matrix
+        # Create an empty list
         # when representing the queens:
             # row is the index of the list
             # and the value is the column number
@@ -76,20 +75,21 @@ class solver:
         self.answers : list = []
         
         # Board positioning
-        self.board_x : int = (self.screen_size - self.board_size * self.square_width) // 2
-        self.board_y : int = (self.screen_size - self.board_size * self.square_width) // 2
+        self.BOARD_X : int = (self.screen_size - self.board_size * self.SQUARE_WIDTH) // 2  # starting x position of the chess board
+        self.BOARD_Y : int = (self.screen_size - self.board_size * self.SQUARE_WIDTH) // 2  # starting y position of the chess board
         
         # Create the Pygame window for Queens Solver
         os.environ['SDL_VIDEO_CENTERED'] = '1'  # to center the window
         self.screen = pygame.display.set_mode((self.screen_size, self.screen_size))
         pygame.display.set_caption(f"{self.board_size} Queens Solver")
         
+        # Load the queen images
         self.queen_b = pygame.image.load("pieces/queen_b.png").convert_alpha()
         self.queen_w = pygame.image.load("pieces/queen_w.png").convert_alpha()
-        self.queen_b = pygame.transform.scale(self.queen_b, (self.square_width, self.square_width))
-        self.queen_w = pygame.transform.scale(self.queen_w, (self.square_width, self.square_width))
+        self.queen_b = pygame.transform.scale(self.queen_b, (self.SQUARE_WIDTH, self.SQUARE_WIDTH))
+        self.queen_w = pygame.transform.scale(self.queen_w, (self.SQUARE_WIDTH, self.SQUARE_WIDTH))
         
-        self.delay = min(0.01, 0.3 * (0.5 ** self.board_size))
+        self.delay: float = min(0.01, 0.3 * (0.5 ** self.board_size)) * 1000  # delay in milliseconds
         
         self.screen.fill(self.BACKGROUND)  # draw the background
         self.game()
@@ -122,8 +122,8 @@ class solver:
                 if col == self.board_size - 1:
                     self.answers.append(self.board.copy())
                     print(f"\033[92mSolution found \033[94m({len(self.answers)})\033[92m: \033[93m{self.board}\033[0m")
-                    self.draw_board(self.board)
-                    sleep(3) # Pause to show the solution
+                    self.draw_board(self.board, show_threats=False)
+                    pygame.time.wait(3 * 1000)  # Pause to show the solution
                     self.handle_events()
                 else:
                     col += 1              # Move to the next column
@@ -151,26 +151,26 @@ class solver:
         return True
     
     # MARK: draw_board
-    def draw_board(self, board: list, error_full: bool = False) -> None:
+    def draw_board(self, board: list, error_full: bool = False, show_threats: bool = True) -> None:
         """Draw the sensor values on the screen."""
         # Draw each square based on sensor value
         for row in range(self.board_size):
             for column in range(self.board_size):
-                self.draw_square(row, column, board, error_full)
+                self.draw_square(row, column, board, error_full, show_threats)
                 pygame.display.flip()
-                sleep(self.delay)  # Delay for visual effect
+                pygame.time.delay(int(self.delay))  # Delay for visual effect
     
     # MARK: draw_square
-    def draw_square(self, row: int, column: int, board: list, error_full: bool = False) -> None:
+    def draw_square(self, row: int, column: int, board: list, error_full: bool = False, show_threats: bool = True) -> None:
         """Draw individual sensor squares."""
         color: tuple = self.WHITE if ((row + column) % 2) == 0 else self.BLACK
         
         # Draw the square
         square_rect = pygame.Rect(
-            self.board_x + row * self.square_width, 
-            self.board_y + column * self.square_width, 
-            self.square_width, 
-            self.square_width
+            self.BOARD_X + row * self.SQUARE_WIDTH, 
+            self.BOARD_Y + column * self.SQUARE_WIDTH, 
+            self.SQUARE_WIDTH, 
+            self.SQUARE_WIDTH
         )
         pygame.draw.rect(self.screen, color, square_rect)
         
@@ -178,7 +178,8 @@ class solver:
             # Draw the queen
             self.screen.blit(self.queen_b if (row + column) % 2 == 0 else self.queen_w, square_rect.topleft)
         
-        self.is_under_threat(row, column, square_rect, board, error_full)
+        if show_threats:
+            self.is_under_threat(row, column, square_rect, board, error_full)
     
     # MARK: is_under_threat
     def is_under_threat(self, row: int, column: int, square_rect: pygame.Rect, board: list, error_full: bool = False) -> bool:
@@ -198,7 +199,7 @@ class solver:
     # MARK: draw_threat
     def draw_threat(self, square_rect: pygame.Rect) -> None:
         # Draw the threat indicator
-        s = pygame.Surface((self.square_width, self.square_width), pygame.SRCALPHA)
+        s = pygame.Surface((self.SQUARE_WIDTH, self.SQUARE_WIDTH), pygame.SRCALPHA)
         s.fill(self.SEMI_RED)
         self.screen.blit(s, square_rect.topleft)
     
@@ -231,8 +232,10 @@ class solver:
                     if event.key in [pygame.K_ESCAPE, pygame.K_q]:
                         self.quit_game(0)
                     elif event.unicode == "\r" and input_text:
+                        # if the user presses enter key and there is text
                         input_active = False
                     elif event.key == pygame.K_BACKSPACE:
+                        # if the user presses backspace, remove the last character
                         input_text = input_text[:-1]
                     elif len(input_text) < len(str(limit)) and event.unicode.isdigit():
                         # Limit the length of the text
@@ -313,7 +316,7 @@ class solver:
                             print("\033[91mInvalid setup. No two queens should threaten each other.\033[0m")
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.handle_click(pygame.mouse.get_pos())
-                    self.clear_text_at_location(self.square_width, self.square_width * 0.5)
+                    self.clear_text_at_location(self.SQUARE_WIDTH, self.SQUARE_WIDTH * 0.5)
     
     # MARK: is_valid_manual_board
     def is_valid_manual_board(self) -> bool:
@@ -324,7 +327,7 @@ class solver:
                 if self.user_board[j] == -1:
                     continue
                 if self.user_board[i] == self.user_board[j] or abs(self.user_board[i] - self.user_board[j]) == abs(i - j):
-                    self.draw_text_at_location(f"Invalid Queen placement at ({i}, {self.user_board[i]})", self.square_width, self.square_width * 0.5)
+                    self.draw_text_at_location(f"Invalid Queen placement at ({i}, {self.user_board[i]})", self.SQUARE_WIDTH, self.SQUARE_WIDTH * 0.5)
                     return False
         return True
     
@@ -340,8 +343,8 @@ class solver:
     # MARK: handle_click
     def handle_click(self, pos: tuple):
         x, y = pos
-        col = (x - self.board_x) // self.SQUARE_WIDTH
-        row = (y - self.board_y) // self.SQUARE_WIDTH
+        col = (x - self.BOARD_X) // self.SQUARE_WIDTH
+        row = (y - self.BOARD_Y) // self.SQUARE_WIDTH
         
         if (0 <= row < self.board_size) and (0 <= col < self.board_size):
             if self.user_board[col] == row:
@@ -364,8 +367,8 @@ class solver:
         if col == self.board_size:
             print("\033[93mBoard already has a complete solution!\033[0m")
             self.answers.append(self.user_board.copy())
-            self.draw_board(self.user_board)
-            sleep(3)
+            self.draw_board(self.user_board, show_threats=False)
+            pygame.time.wait(1000)  # Pause to show the solution
         
         self.manual_game()
         print(f"\033[92mAll solutions found \033[94m({len(self.answers)})\033[92m: \033[93m{self.answers}\033[0m")
@@ -399,8 +402,8 @@ class solver:
                 if col == self.board_size - 1:
                     self.answers.append(self.board.copy())
                     print(f"\033[92mSolution found \033[94m({len(self.answers)})\033[92m: \033[93m{self.board}\033[0m")
-                    self.draw_board(self.board)
-                    sleep(3) # Pause to show the solution
+                    self.draw_board(self.board, show_threats=False)
+                    pygame.time.wait(3 * 1000)  # Pause to show the solution
                     self.handle_events()
                 else:
                     col += 1              # Move to the next column
