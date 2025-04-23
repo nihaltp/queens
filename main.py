@@ -184,10 +184,13 @@ class solver:
     # MARK: is_under_threat
     def is_under_threat(self, row: int, column: int, square_rect: pygame.Rect, board: list, error_full: bool = False) -> bool:
         """Check if the (row, column) is threatened by any existing queen."""
-        if error_full:
-            row = self.board_size
+        i = row  # start from the current row
         
-        for r in range(row):
+        if error_full:
+            # Check the entire board
+            i = self.board_size
+        
+        for r in range(i):
             col = board[r]
             if col == -1:
                 continue
@@ -301,7 +304,7 @@ class solver:
         
         print("\033[96mClick on the board to place/remove queens. Press ENTER to solve.\033[0m")
         while True:
-            self.draw_board(self.user_board, True)
+            self.draw_board(self.user_board, error_full=True)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.quit_game(0)
