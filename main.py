@@ -208,9 +208,12 @@ class solver:
         self.screen.blit(s, square_rect.topleft)
     
     # MARK: handle_events
-    def handle_events(self) -> None:
+    def handle_events(self, events = None) -> None:
         """Handle user input events."""
-        for event in pygame.event.get():
+        if events is None:
+            events = pygame.event.get()
+        
+        for event in events:
             if event.type == pygame.QUIT:
                 self.quit_game(0)
             elif event.type == pygame.KEYDOWN:
@@ -232,22 +235,22 @@ class solver:
         input_text: list = []
         
         while input_active:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.quit_game(0)
-                elif event.type == pygame.KEYDOWN:
-                    if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                        self.quit_game(0)
-                    elif event.unicode == "\r" and input_text:
-                        # if the user presses enter key and there is text
-                        input_active = False
-                    elif event.key == pygame.K_BACKSPACE:
-                        # if the user presses backspace, remove the last character
-                        input_text = input_text[:-1]
-                    elif len(input_text) < len(str(limit)) and event.unicode.isdigit():
-                        # Limit the length of the text
-                        # and check if the input is a digit
-                        input_text.append(event.unicode)
+            events = pygame.event.get()
+            self.handle_events(events)
+            
+            for event in events:
+                if event.type != pygame.KEYDOWN:
+                    continue
+                if event.unicode == "\r" and input_text:
+                    # if the user presses enter key and there is text
+                    input_active = False
+                elif event.key == pygame.K_BACKSPACE:
+                    # if the user presses backspace, remove the last character
+                    input_text = input_text[:-1]
+                elif len(input_text) < len(str(limit)) and event.unicode.isdigit():
+                    # Limit the length of the text
+                    # and check if the input is a digit
+                    input_text.append(event.unicode)
             
             self.screen.fill(self.BACKGROUND)
             
@@ -271,12 +274,14 @@ class solver:
         self.draw_buttons()
         
         while True:
-            self.handle_events()
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            self.handle_events(events)
+            
+            for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # return if it is not None
                     mode = self.handle_buttons()
-                    if mode is not None:
+                    if mode not in ["", None]:
                         return mode
     
     # MARK: draw_buttons
@@ -309,13 +314,13 @@ class solver:
         print("\033[96mClick on the board to place/remove queens. Press ENTER to solve.\033[0m")
         while True:
             self.draw_board(self.user_board, error_full=True)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.quit_game(0)
-                elif event.type == pygame.KEYDOWN:
-                    if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                        self.quit_game(0)
-                    elif event.key == pygame.K_RETURN:  # if the user presses enter key
+            
+            events = pygame.event.get()
+            self.handle_events(events)
+            
+            for event in events:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:  # if the user presses enter key
                         if self.is_valid_manual_board():
                             self.solve_from_partial()
                             return
@@ -334,7 +339,7 @@ class solver:
                 if self.user_board[j] == -1:
                     continue
                 if self.user_board[i] == self.user_board[j] or abs(self.user_board[i] - self.user_board[j]) == abs(i - j):
-                    self.draw_text_at_location(f"Invalid Queen placement at ({i}, {self.user_board[i]})", self.SQUARE_WIDTH, self.SQUARE_WIDTH * 0.5)
+                    self.draw_text_at_location(f"Invalid Queen placement", self.SQUARE_WIDTH, self.SQUARE_WIDTH * 0.5)
                     return False
         return True
     
