@@ -51,6 +51,9 @@ class solver:
             "Manual": (25 + self.BUTTON_WIDTH + 25, 50),
         }
         
+        self.delay: float = min(0.01, 0.3 * (0.5 ** self.board_size)) * 1000  # delay in milliseconds
+        self.threats: bool = True  # show threats or not
+        
         # Create the Pygame window for Getting Board Size
         self.screen = pygame.display.set_mode((self.screen_size, self.screen_size//4))
         pygame.display.set_caption("N-Queens Solver Board Size")
@@ -88,8 +91,6 @@ class solver:
         self.queen_w = pygame.image.load("pieces/queen_w.png").convert_alpha()
         self.queen_b = pygame.transform.scale(self.queen_b, (self.SQUARE_WIDTH, self.SQUARE_WIDTH))
         self.queen_w = pygame.transform.scale(self.queen_w, (self.SQUARE_WIDTH, self.SQUARE_WIDTH))
-        
-        self.delay: float = min(0.01, 0.3 * (0.5 ** self.board_size)) * 1000  # delay in milliseconds
         
         self.screen.fill(self.BACKGROUND)  # draw the background
         self.game()
@@ -178,7 +179,7 @@ class solver:
             # Draw the queen
             self.screen.blit(self.queen_b if (row + column) % 2 == 0 else self.queen_w, square_rect.topleft)
         
-        if show_threats:
+        if show_threats and self.threats:
             self.is_under_threat(row, column, square_rect, board, error_full)
     
     # MARK: is_under_threat
@@ -221,6 +222,9 @@ class solver:
                 elif event.key == pygame.K_DOWN:
                     self.delay /= 2
                     print(f"\033[93mDelay: {self.delay}\033[0m")
+                elif event.key == pygame.K_t:
+                    self.threats = not self.threats
+                    print(f"\033[93mShow threats: {self.threats}\033[0m")
     
     # MARK: input_num
     def input_num(self, prompt: str, position: tuple, limit: int) -> int:
