@@ -195,6 +195,9 @@ class solver:
             col = board[r]
             if col == -1:
                 continue
+            if r == row and col == column:
+                # Skip the current Queen
+                continue
             if col == column or abs(col - column) == abs(r - row):
                 self.draw_threat(square_rect)
                 return True
