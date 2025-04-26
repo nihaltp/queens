@@ -12,21 +12,28 @@ import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import sys
+import signal
 
 try:
     import pygame
 except ImportError:
     print("\033[91mPygame is not installed. Please install it using \033[92m'pip install pygame'\033[0m")
     sys.exit(1)
+except KeyboardInterrupt:
+    print("Ctrl+C detected! Exiting...")
+    sys.exit(1)
 
 # MARK: solver
 class solver:
     def __init__(self) -> None:
+        # Bind the SIGINT (Ctrl+C) to the custom handler
+        signal.signal(signal.SIGINT, self._handle_sigint)
+        
         try:
             pygame.init() # Initialize Pygame
         except pygame.error as e:
             print(f"Error initializing Pygame: {e}")
-            self.quit_game(1)
+            self._quit_game(1)
         
         self.board_size   : int = 8  # for making the inital window
         self.SQUARE_WIDTH : int = 50
@@ -218,10 +225,12 @@ class solver:
         
         for event in events:
             if event.type == pygame.QUIT:
-                self.quit_game(0)
+                self._quit_game(0)
             elif event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                    self.quit_game(0)
+                    self._quit_game(0)
+                if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    self._quit_game(0)
                 elif event.key == pygame.K_UP:
                     self.delay *= 2
                     print(f"\033[93mDelay: {self.delay}\033[0m")
@@ -429,8 +438,13 @@ class solver:
             
             self.draw_board(self.board)
     
-    # MARK: quit_game
-    def quit_game(self, error: int = 0) -> None:
+    # MARK: _handle_sigint
+    def _handle_sigint(self, *args) -> None:
+        print("\033[93mCtrl+C detected!\033[0m")
+        self._quit_game(0)
+    
+    # MARK: _quit_game
+    def _quit_game(self, error: int = 0) -> None:
         """Exit the Pygame window."""
         if hasattr(self, 'answers') and self.answers:
             print(f"\033[92mSolutions found \033[94m({len(self.answers)})\033[92m: \033[93m{self.answers}\033[0m")
