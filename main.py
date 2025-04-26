@@ -53,10 +53,9 @@ class solver:
         self.BUTTON_MARGIN_X: int = self.BUTTON_WIDTH // 4
         self.BUTTON_MARGIN_Y: int = self.BUTTON_HEIGHT // 2
         
-        self.BUTTON_POSITIONS = {
-            "Simulation": (25, 50),
-            "Manual": (25 + self.BUTTON_WIDTH + 25, 50),
-        }
+        self.buttons: tuple[str, ...] = ("Simulation", "Manual")
+        self.manual_buttons: tuple[str, ...] = ("Normal", "Colored")
+        self.positions: tuple[tuple[int, int], ...] = ((25, 50), (50 + self.BUTTON_WIDTH, 50))
         
         self.delay: float = min(0.01, 0.3 * (0.5 ** self.board_size)) * 1000  # delay in milliseconds
         self.threats: bool = True  # show threats or not
@@ -72,7 +71,7 @@ class solver:
         self.BOARD_SIZE_LIMIT: int = 12  # Maximum board size
         self.board_size = self.input_num("Size of the board (N x N): ", (self.SQUARE_WIDTH, self.SQUARE_WIDTH), self.BOARD_SIZE_LIMIT)
         
-        self.GAME_MODE: str = self.get_mode()
+        self.GAME_MODE: str = self.get_mode(self.buttons, self.positions)
         print(f"\033[92mGame mode selected: {self.GAME_MODE}\033[0m")
         
         self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH  # recalculate the screen size based on the new board_size
@@ -107,8 +106,10 @@ class solver:
         match self.GAME_MODE:
             case "Simulation":
                 self.simulation()
-            case "Manual":
+            case "Normal":
                 self.manual()
+            case "Colored":
+                pass
     
     # MARK: simulation
     def simulation(self) -> None:
@@ -280,28 +281,38 @@ class solver:
         return current_num
     
     # MARK: get_mode
-    def get_mode(self) -> str:
+    def get_mode(self, buttons: tuple, positions: tuple) -> str:
         """Get the game mode"""
         self.screen.fill(self.BACKGROUND)
-        self.draw_buttons()
+        self.draw_buttons(buttons, positions)
         
         while True:
             events = pygame.event.get()
             self.handle_events(events)
             
             for event in events:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    # return if it is not None
-                    mode = self.handle_buttons()
-                    if mode not in ["", None]:
-                        return mode
+                if event.type != pygame.MOUSEBUTTONDOWN:
+                    continue
+                
+                mode = self.handle_buttons(buttons, positions)
+                
+                # return if it is not None
+                if mode in ["", None]:
+                    continue
+                
+                if mode == "Manual":
+                    self.screen.fill(self.BACKGROUND)
+                    self.draw_buttons(self.manual_buttons, positions)
+                    return self.get_mode(self.manual_buttons, positions)
+                
+                return mode
     
     # MARK: draw_buttons
-    def draw_buttons(self) -> None:
+    def draw_buttons(self, buttons: tuple, positions: tuple[tuple[int, int]]) -> None:
         """Draw the buttons on the screen."""
-        for button_name in self.BUTTON_POSITIONS.keys():
+        for i, button_name in enumerate(buttons):
             # Draw the buttons
-            button_position = self.BUTTON_POSITIONS[button_name]
+            button_position: tuple = positions[i]
             button = pygame.Rect(button_position, (self.BUTTON_WIDTH, self.BUTTON_HEIGHT))
             pygame.draw.rect(self.screen, self.BUTTON_COLOR, button)
             
@@ -311,10 +322,10 @@ class solver:
         pygame.display.flip()
     
     # MARK: handle_buttons
-    def handle_buttons(self) -> str:
+    def handle_buttons(self, buttons: tuple[str, ...], positions: tuple[tuple[int, int]]) -> str:
         """Handle button clicks."""
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        for button_name, pos in self.BUTTON_POSITIONS.items():
+        for button_name, pos in zip(buttons, positions):
             if pos[0] <= mouse_x <= pos[0] + self.BUTTON_WIDTH and pos[1] <= mouse_y <= pos[1] + self.BUTTON_HEIGHT:
                 return button_name
         return ""
