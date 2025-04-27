@@ -109,7 +109,7 @@ class solver:
             case "Normal":
                 self.manual()
             case "Colored":
-                pass
+                self.colored_game()
     
     # MARK: simulation
     def simulation(self) -> None:
@@ -448,6 +448,124 @@ class solver:
                 col -= 1              # Backtrack to the previous column
             
             self.draw_board(self.board)
+    
+    # MARK: colored_game
+    def colored_game(self) -> None:
+        """
+        Create a 2D list to represent the color board.
+        The color board will be of size board_size x board_size.
+        Each cell will be initialized to 0, indicating no color is assigned.
+        The color board will be used to track the colors placed on the board.
+        The colors will be represented by integers from self.colors dict.
+        """
+        self.color_board: list[list] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
+        
+        self.colors: dict = {
+            1: (255, 0, 0),      # Red
+            2: (0, 255, 0),      # Green
+            3: (0, 0, 255),      # Blue
+            4: (255, 255, 0),    # Yellow
+            5: (255, 128, 0),    # Orange
+            6: (255, 192, 203),  # Pink
+            7: (0, 128, 128),    # Teal
+            8: (128, 128, 128),  # Grey
+        }
+        
+        """
+        Create a 2D list to represent the board.
+        Each cell will be initialized to 0, indicating no queen is placed.
+        The board will be of size board_size x board_size.
+        The board will be used to track the placement of queens and their colors.
+        
+        x will be used to track cells that are under threat.
+        q will be used to track cells that are occupied by queens.
+        0 will be used to track empty cells that are not under threat.
+        """
+        self.color_board_state: list[list] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
+        
+        self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH  # recalculate the screen size based on the new board_size
+
+        # Create the Pygame window for Colored Queens Solver
+        os.environ['SDL_VIDEO_CENTERED'] = '1'  # to center the window
+        self.screen = pygame.display.set_mode((self.screen_size + 2 * self.SQUARE_WIDTH, self.screen_size))
+        pygame.display.set_caption(f"Colored {self.board_size} Queens Solver")
+        self.screen.fill(self.BACKGROUND)  # draw the background
+        
+        self.color_selected: int = 0
+        
+        while True:
+            self.draw_color_board()
+            self.draw_color_options()
+            
+            events = pygame.event.get()
+            self.handle_events(events)
+            
+            for event in events:
+                if event.type != pygame.MOUSEBUTTONDOWN:
+                    continue
+                
+                self.handle_color_click()
+    
+    # MARK: draw_color_board
+    def draw_color_board(self) -> None:
+        """Draw the colored board."""
+        for row in range(self.board_size):
+            for column in range(self.board_size):
+                color: tuple = self.colors[self.color_board_state[row][column]] if self.color_board_state[row][column] != 0 else self.WHITE
+                self.draw_color_square(row, column, color)
+                pygame.display.flip()
+                pygame.time.delay(int(self.delay))  # Delay for visual effect
+    
+    # MARK: draw_color_square
+    def draw_color_square(self, row: int, column: int, color: tuple = (0,0,0)) -> None:
+        # Draw the square
+        square_rect = pygame.Rect(
+            self.BOARD_X + row * self.SQUARE_WIDTH,
+            self.BOARD_Y + column * self.SQUARE_WIDTH,
+            self.SQUARE_WIDTH, self.SQUARE_WIDTH
+        )
+        pygame.draw.rect(self.screen, color, square_rect)
+    
+    # MARK: draw_color_options
+    def draw_color_options(self) -> None:
+        """Draw the colored board."""
+        for row in range(self.board_size):
+            # get color from the dict colors according to color
+            color: tuple = self.colors[row + 1]
+            self.draw_color_square(self.board_size + 1, row, color)
+            pygame.display.flip()
+    
+    # MARK: handle_color_click
+    def handle_color_click(self) -> None:
+        x, y = pygame.mouse.get_pos()
+        col = (x - self.BOARD_X) // self.SQUARE_WIDTH
+        row = (y - self.BOARD_Y) // self.SQUARE_WIDTH
+        
+        print(f"col: {col}, row: {row}")
+        
+        if (col == self.board_size + 1) and (0 <= row < self.board_size):
+            print("here")
+            if self.color_selected == row + 1:
+                # remove selection if same color clicked twice
+                self.color_selected = 0
+                return
+            
+            self.color_selected = row + 1  # select color
+            print(self.color_selected)
+            return
+        
+        if self.color_selected == 0:
+            return
+        
+        if (0 <= row < self.board_size) and (0 <= col < self.board_size):
+            print("yep")
+            if self.color_board_state[col][row] == self.color_selected:
+                self.color_board_state[col][row] = 0  # remove color
+                return
+            
+            # if the square is empty, add color
+            self.color_board_state[col][row] = self.color_selected  # add color
+            return
     
     # MARK: _handle_sigint
     def _handle_sigint(self, *args) -> None:
