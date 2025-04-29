@@ -171,15 +171,14 @@ class solver:
     
     # MARK: draw_square
     def draw_square(self, row: int, column: int, board: list, error_full: bool = False, show_threats: bool = True) -> None:
-        """Draw individual sensor squares."""
+        """Draw individual squares."""
         color: tuple = self.WHITE if ((row + column) % 2) == 0 else self.BLACK
         
         # Draw the square
         square_rect = pygame.Rect(
-            self.BOARD_X + row * self.SQUARE_WIDTH, 
-            self.BOARD_Y + column * self.SQUARE_WIDTH, 
-            self.SQUARE_WIDTH, 
-            self.SQUARE_WIDTH
+            self.BOARD_X + row * self.SQUARE_WIDTH,
+            self.BOARD_Y + column * self.SQUARE_WIDTH,
+            self.SQUARE_WIDTH, self.SQUARE_WIDTH
         )
         pygame.draw.rect(self.screen, color, square_rect)
         
@@ -493,14 +492,26 @@ class solver:
         
         self.color_selected: int = 0
         
+        self.update_color_board()
+    
+    # MARK: update_color_board
+    def update_color_board(self):
+        self.draw_color_options()
+        
         while True:
             self.draw_color_board()
-            self.draw_color_options()
             
             events = pygame.event.get()
             self.handle_events(events)
             
             for event in events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    # if the user presses enter key
+                    if self.is_valid_color_board():
+                        print("\033[92mStarting the colored queens solver...\033[0m")
+                        return
+                    print("\033[91mInvalid color setup. Make sure each color is used\033[0m")
+                
                 if event.type != pygame.MOUSEBUTTONDOWN:
                     continue
                 
@@ -511,7 +522,7 @@ class solver:
         """Draw the colored board."""
         for row in range(self.board_size):
             for column in range(self.board_size):
-                color: tuple = self.colors[self.color_board_state[row][column]] if self.color_board_state[row][column] != 0 else self.WHITE
+                color: tuple = self.colors[self.color_board[row][column]] if self.color_board[row][column] != 0 else self.WHITE
                 self.draw_color_square(row, column, color)
                 pygame.display.flip()
                 pygame.time.delay(int(self.delay))  # Delay for visual effect
@@ -541,31 +552,39 @@ class solver:
         col = (x - self.BOARD_X) // self.SQUARE_WIDTH
         row = (y - self.BOARD_Y) // self.SQUARE_WIDTH
         
-        print(f"col: {col}, row: {row}")
-        
         if (col == self.board_size + 1) and (0 <= row < self.board_size):
-            print("here")
             if self.color_selected == row + 1:
                 # remove selection if same color clicked twice
                 self.color_selected = 0
                 return
             
             self.color_selected = row + 1  # select color
-            print(self.color_selected)
             return
         
         if self.color_selected == 0:
             return
         
         if (0 <= row < self.board_size) and (0 <= col < self.board_size):
-            print("yep")
-            if self.color_board_state[col][row] == self.color_selected:
-                self.color_board_state[col][row] = 0  # remove color
+            if self.color_board[col][row] == self.color_selected:
+                self.color_board[col][row] = 0  # remove color
                 return
             
             # if the square is empty, add color
-            self.color_board_state[col][row] = self.color_selected  # add color
+            self.color_board[col][row] = self.color_selected  # add color
             return
+    
+    # MARK: is_valid_color_board
+    def is_valid_color_board(self) -> bool:
+        """ Check if the current color placement is valid. """
+        nums_needed = set(range(1, self.board_size + 1))
+        all_nums = set(num for row in self.color_board for num in row)
+        
+        # if there is an empty square, return False
+        if 0 in all_nums:
+            return False
+        
+        # Checks if each color is used in atleast once.
+        return nums_needed.issubset(all_nums)
     
     # MARK: _handle_sigint
     def _handle_sigint(self, *args) -> None:
