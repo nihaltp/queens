@@ -482,8 +482,15 @@ class solver:
         """
         self.color_board_state: list[list] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
         
-        self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH  # recalculate the screen size based on the new board_size
-
+        """
+        Create a list to track the number of colors used.
+        The list will be of size self.board_size.
+        Each index will represent a color, and the value will represent the count of that color used.
+        """
+        self.color_board_count: list[int] = [0 for _ in range(self.board_size)]
+        
+        # recalculate the screen size based on the new board_size
+        self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH
         # Create the Pygame window for Colored Queens Solver
         os.environ['SDL_VIDEO_CENTERED'] = '1'  # to center the window
         self.screen = pygame.display.set_mode((self.screen_size + 2 * self.SQUARE_WIDTH, self.screen_size))
@@ -493,6 +500,7 @@ class solver:
         self.color_selected: int = 0
         
         self.update_color_board()
+        self.solve_color_board()
     
     # MARK: update_color_board
     def update_color_board(self):
@@ -528,7 +536,7 @@ class solver:
                 pygame.time.delay(int(self.delay))  # Delay for visual effect
     
     # MARK: draw_color_square
-    def draw_color_square(self, row: int, column: int, color: tuple = (0,0,0)) -> None:
+    def draw_color_square(self, row: int, column: int, color: tuple = (0,0,0), mark: bool = True) -> None:
         # Draw the square
         square_rect = pygame.Rect(
             self.BOARD_X + row * self.SQUARE_WIDTH,
@@ -536,6 +544,9 @@ class solver:
             self.SQUARE_WIDTH, self.SQUARE_WIDTH
         )
         pygame.draw.rect(self.screen, color, square_rect)
+        
+        if mark:
+            self.mark_color_square(row, column, square_rect)
     
     # MARK: draw_color_options
     def draw_color_options(self) -> None:
@@ -543,9 +554,30 @@ class solver:
         for row in range(self.board_size):
             # get color from the dict colors according to color
             color: tuple = self.colors[row + 1]
-            self.draw_color_square(self.board_size + 1, row, color)
+            self.draw_color_square(self.board_size + 1, row, color, False)
             pygame.display.flip()
     
+    # MARK: mark_color_square
+    def mark_color_square(self, row: int, column: int, square_rect: pygame.Rect) -> None:
+        if self.color_board_state[row][column] == "q":
+            # draw a queen
+            self.screen.blit(self.queen_b if (row + column) % 2 == 0 else self.queen_w, square_rect.topleft)
+        
+        if self.color_board_state[row][column] == "x":
+            # draw an x mark
+            thickness = 2
+            
+            one_third = self.SQUARE_WIDTH / 3
+            top    = self.BOARD_X + ( row         * self.SQUARE_WIDTH) + one_third
+            bottom = self.BOARD_X + ((row + 1)    * self.SQUARE_WIDTH) - one_third
+            left   = self.BOARD_Y + ( column      * self.SQUARE_WIDTH) + one_third
+            right  = self.BOARD_Y + ((column + 1) * self.SQUARE_WIDTH) - one_third
+            
+            # draw left to right line of x
+            pygame.draw.line(self.screen, self.BLACK, (top, left), (bottom, right), thickness)
+            # draw right to left line of x
+            pygame.draw.line(self.screen, self.BLACK, (top, right), (bottom, left), thickness)
+        
     # MARK: handle_color_click
     def handle_color_click(self) -> None:
         x, y = pygame.mouse.get_pos()
@@ -585,6 +617,63 @@ class solver:
         
         # Checks if each color is used in atleast once.
         return nums_needed.issubset(all_nums)
+    
+    # MARK: solve_color_board
+    def solve_color_board(self):
+        """
+        1. Reduce the window size
+        2. Check if there is any color with only one cell
+        """
+        
+        # recalculate the screen size based on the new board_size
+        self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH
+        # Create the Pygame window for Colored Queens Solver
+        os.environ['SDL_VIDEO_CENTERED'] = '1'  # to center the window
+        self.screen = pygame.display.set_mode((self.screen_size, self.screen_size))
+        pygame.display.set_caption(f"Colored {self.board_size} Queens Solver")
+        self.screen.fill(self.BACKGROUND)  # draw the background
+        self.draw_color_board()
+        
+        self.count_numbers()
+        
+        for i in range(self.board_size):
+            c = self.color_board_count[i]
+            if c == 1:
+                # if there is a color with only one cell, make it a queen
+                # find its position in self.color_board
+                for x in range(self.board_size):
+                    for y in range(self.board_size):
+                        if self.color_board[x][y] == i + 1:
+                            self.mark_queen(x, y)
+        
+        while True:
+            self.draw_color_board()
+            self.handle_events()
+        
+    
+    # MARK: mark_queen
+    def mark_queen(self, x: int, y: int):
+        """
+        Mark the row and coloum as occupied(x)
+        Mark self.color_board_state[x][y] as queen(q)
+        Mark the surroundings as occupied(x)
+        """
+        
+        self.color_board_state[x][y] = "q"
+        
+        for i in range(self.board_size):
+            self.color_board_state[x][i] = "x" if self.color_board_state[x][i] != "q" else self.color_board_state[x][i]
+            self.color_board_state[i][y] = "x" if self.color_board_state[i][y] != "q" else self.color_board_state[i][y]
+        
+        for i in [-1, +1]:
+            for j in [-1, +1]:
+                if 0 <= x + i < self.board_size and 0 <= y + j < self.board_size:
+                    self.color_board_state[x + i][y + j] = "x"
+    
+    def count_numbers(self):
+        for row in self.color_board:
+            for num in row:
+                self.color_board_count[num - 1] += 1
     
     # MARK: _handle_sigint
     def _handle_sigint(self, *args) -> None:
