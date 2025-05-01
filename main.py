@@ -489,6 +489,13 @@ class solver:
         """
         self.color_board_count: list[int] = [0 for _ in range(self.board_size)]
         
+        """
+        Create a list to track the color of queens placed.
+        The length of list will represent the number of queens placed.
+        Each index will represent a queen, and the value will represent the color of that queen.
+        """
+        self.color_board_queens: list[int] = []
+        
         # recalculate the screen size based on the new board_size
         self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH
         # Create the Pygame window for Colored Queens Solver
@@ -623,6 +630,7 @@ class solver:
         """
         1. Reduce the window size
         2. Check if there is any color with only one cell
+        3. Check if there is any color with only one cell remaining
         """
         
         # recalculate the screen size based on the new board_size
@@ -635,21 +643,65 @@ class solver:
         self.draw_color_board()
         
         self.count_numbers()
+        self.assign_queens_to_unique_cells()
         
-        for i in range(self.board_size):
-            c = self.color_board_count[i]
-            if c == 1:
-                # if there is a color with only one cell, make it a queen
-                # find its position in self.color_board
+        # Check if there are any colors with only one cell remaining
+        checking: bool = True
+        recheck : bool = False
+        while checking:
+            # check for every color
+            for i in range(self.board_size):
+                if i + 1 in self.color_board_queens:
+                    # skip the colors with queens
+                    continue
+                
+                # check how many cells does this colour have
+                cells_available: int = 0
+                first_xy: tuple = ()
                 for x in range(self.board_size):
                     for y in range(self.board_size):
-                        if self.color_board[x][y] == i + 1:
-                            self.mark_queen(x, y)
+                        # check if the color is threatened
+                        if self.color_board[x][y] == i + 1 and self.color_board_state[x][y] != "x":
+                            cells_available += 1
+                            
+                            # if it is the only available cell so far
+                            if cells_available == 1:
+                                first_xy = x,y
+                # if this color has only one cell, mark it as queen
+                if cells_available == 1:
+                    recheck = True  # check the board once again
+                    x, y = first_xy
+                    self.mark_queen(x, y)
+                    self.draw_color_board()
+            
+            # if all checks are done, end the loop
+            if not recheck:
+                checking = False
         
-        while True:
-            self.draw_color_board()
+    
+    # MARK: assign_queens_to_unique_cells
+    def assign_queens_to_unique_cells(self) -> None:
+        """
+        Assign queens to cells that have only one color.
+        """
+        for i in range(self.board_size):
             self.handle_events()
-        
+            c: int = self.color_board_count[i]
+            if c == 1:
+                self.place_queen_on_board(i)
+    
+    # MARK: place_queen_on_board
+    def place_queen_on_board(self, i: int) -> None:
+        """
+        if there is a color with only one cell, make it a queen
+        find its position in self.color_board and mark it as a queen
+        """
+        for x in range(self.board_size):
+            for y in range(self.board_size):
+                if self.color_board[x][y] == i + 1:
+                    self.mark_queen(x, y)
+                    self.draw_color_board()
+                    return
     
     # MARK: mark_queen
     def mark_queen(self, x: int, y: int):
@@ -658,6 +710,8 @@ class solver:
         Mark self.color_board_state[x][y] as queen(q)
         Mark the surroundings as occupied(x)
         """
+        
+        self.color_board_queens.append(self.color_board[x][y])
         
         self.color_board_state[x][y] = "q"
         
