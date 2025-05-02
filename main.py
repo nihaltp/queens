@@ -496,6 +496,11 @@ class solver:
         """
         self.color_board_queens: list[int] = []
         
+        """
+        Create a list to track single color rows.
+        """
+        self.single_color_list: list = []
+        
         # recalculate the screen size based on the new board_size
         self.screen_size = self.SQUARE_WIDTH * self.board_size + 2 * self.SQUARE_WIDTH
         # Create the Pygame window for Colored Queens Solver
@@ -645,15 +650,23 @@ class solver:
         self.count_numbers()
         self.assign_queens_to_unique_cells()
         
-        self.validate_solution()
-        # Check if there are any colors with only one cell remaining
+        while True:
+            self.handle_events()
+            self.mark_singleton_cells()
+            self.check_single_color_lines()
+            self.validate_solution()
+    
+    # MARK: mark_singleton_cells
+    def mark_singleton_cells(self) -> None:
+        """ Check if there are any colors with only one cell remaining """
         checking: bool = True
-        recheck : bool = False
         while checking:
+            recheck : bool = False  # check if we need to check again
+            
             # check for every color
             for i in range(self.board_size):
+                # skip the colors with queens
                 if i + 1 in self.color_board_queens:
-                    # skip the colors with queens
                     continue
                 
                 # check how many cells does this colour have
@@ -661,6 +674,7 @@ class solver:
                 first_xy: tuple = ()
                 for x in range(self.board_size):
                     for y in range(self.board_size):
+                        
                         # check if the color is threatened
                         if self.color_board[x][y] == i + 1 and self.color_board_state[x][y] != "x":
                             cells_available += 1
@@ -668,17 +682,75 @@ class solver:
                             # if it is the only available cell so far
                             if cells_available == 1:
                                 first_xy = x,y
+                
                 # if this color has only one cell, mark it as queen
                 if cells_available == 1:
                     recheck = True  # check the board once again
                     x, y = first_xy
                     self.mark_queen(x, y)
                     self.draw_color_board()
+                    pygame.time.delay(int(self.delay))  # Delay for visual effect
+                    break  # exit this for-loop and start over
             
             # if all checks are done, end the loop
             if not recheck:
                 checking = False
-        
+    
+    # MARK: check_single_color_lines
+    def check_single_color_lines(self) -> None:
+        """ Check if there are any row with only one color remaining """
+        checking: bool = True
+        while checking:
+            recheck : bool = False
+            
+            for x in range(self.board_size):
+                # skip row if it is already checked and marked
+                if x in self.single_color_list:
+                    continue
+                
+                # skip row if it has a queen
+                if x in self.color_board_queens:
+                    self.single_color_list.append(x)
+                    continue
+                
+                # check how many colors does this row have
+                colors_in_row: set = set()
+                
+                for y in range(self.board_size):
+                    
+                    # check if the cell has a queen or is threatened
+                    if self.color_board_state[x][y] in ["q", "x"]:
+                        continue
+                    
+                    colors_in_row.add(self.color_board[x][y])
+                
+                if len(colors_in_row) != 1:
+                    # skip this row; more than one color found
+                    continue
+                
+                color = list(colors_in_row)[0]
+                
+                # mark all instances of the color in other rows as "x"
+                recheck = True
+                self.single_color_list.append(x)
+                
+                for i in range(self.board_size):
+                    # skip the single color row
+                    if i == x:
+                        continue
+                    
+                    if i + 1 in self.color_board_queens:
+                        continue
+                    
+                    for j in range(self.board_size):
+                        if self.color_board[i][j] == color and self.color_board_state[i][j] not in ["q", "x"]:
+                            self.color_board_state[i][j] = "x"
+                            self.draw_color_square(i, j, self.colors[color], True)
+                            pygame.display.flip()
+                            pygame.time.delay(int(self.delay))
+            
+            if not recheck:
+                checking = False
     
     # MARK: assign_queens_to_unique_cells
     def assign_queens_to_unique_cells(self) -> None:
