@@ -645,6 +645,7 @@ class solver:
         self.count_numbers()
         self.assign_queens_to_unique_cells()
         
+        self.validate_solution()
         # Check if there are any colors with only one cell remaining
         checking: bool = True
         recheck : bool = False
@@ -728,6 +729,13 @@ class solver:
         for row in self.color_board:
             for num in row:
                 self.color_board_count[num - 1] += 1
+    
+    # MARK: validate_solution
+    def validate_solution(self) -> None:
+        """ Check if the current queen placement is complete. """
+        if len(self.color_board_queens) == self.board_size:
+            self.answers.append(self.color_board_state)
+            self._quit_game(0)
     
     # MARK: _handle_sigint
     def _handle_sigint(self, *args) -> None:
