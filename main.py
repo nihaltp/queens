@@ -449,15 +449,16 @@ class solver:
             self.draw_board(self.board)
     
     # MARK: colored_game
-    def colored_game(self) -> None:
+    def colored_game(self, color_board: bool = True) -> None:
         """
-        Create a 2D list to represent the color board.
+        Create a 2D list to represent the color board, if it has not been made already.
         The color board will be of size board_size x board_size.
         Each cell will be initialized to 0, indicating no color is assigned.
         The color board will be used to track the colors placed on the board.
         The colors will be represented by integers from self.colors dict.
         """
-        self.color_board: list[list] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
+        if color_board:
+            self.color_board: list[list] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
         
         self.colors: dict = {
             1: (255, 0, 0),      # Red
@@ -869,7 +870,21 @@ class solver:
         """ Check if the current queen placement is complete. """
         if len(self.color_board_queens) == self.board_size:
             self.answers.append(self.color_board_state)
+            pygame.time.wait(3 * 1000)  # Pause to show the solution
             self._quit_game(0)
+        
+        else:
+            # check if every square is filled, which means the board is incorrect
+            for row in self.color_board_state:
+                for cell in row:
+                    if cell == 0:
+                        # if there is an empty square, it means space for a queen
+                        return
+            
+            # if every square is filled, the board is incorrect
+            pygame.time.wait(2 * 1000)  # Pause to show the state
+            print("\033[91mBoard is incorrect.\033[0m")
+            self.colored_game(False)
     
     # MARK: _handle_sigint
     def _handle_sigint(self, *args) -> None:
