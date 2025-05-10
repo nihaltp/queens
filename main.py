@@ -11,6 +11,7 @@ import os
 # Hide the Pygame support prompt
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
+import os
 import sys
 import signal
 
@@ -240,6 +241,8 @@ class solver:
                 elif event.key == pygame.K_t:
                     self.threats = not self.threats
                     print(f"\033[93mShow threats: {self.threats}\033[0m")
+                elif event.key == pygame.K_s:
+                    self.take_screenshot()
     
     # MARK: input_num
     def input_num(self, prompt: str, position: tuple, limit: int) -> int:
@@ -458,7 +461,7 @@ class solver:
         The colors will be represented by integers from self.colors dict.
         """
         if color_board:
-            self.color_board: list[list] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
+            self.color_board: list[list[int]] = [[0 for _ in range(self.board_size)] for _ in range(self.board_size)]
         
         self.colors: dict = {
             1: (255, 0, 0),      # Red
@@ -894,7 +897,7 @@ class solver:
             # check if every square is filled, which means the board is incorrect
             for row in self.color_board_state:
                 for cell in row:
-                    if cell == 0:
+                    if cell == "":
                         # if there is an empty square, it means space for a queen
                         return
             
@@ -902,6 +905,33 @@ class solver:
             pygame.time.wait(2 * 1000)  # Pause to show the state
             print("\033[91mBoard is incorrect.\033[0m")
             self.colored_game(False)
+    
+    # MARK: take_screenshot
+    def take_screenshot(self, base: str = "screenshot", ext: str = ".png", folder: str = "screenshots") -> None:
+        """
+        Take a screenshot of the current Pygame window and save it to a file.
+        
+        :param base   : The base name for the screenshot file.
+        :param ext    : Extention for the file
+        :param folder : Folder the file saved into
+        """
+        # Create the folder if it doesn't exist
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        
+        max_index = 0
+        for filename in os.listdir(folder):
+            if filename.startswith(base) and filename.endswith(ext):
+                try:
+                    number_part = filename[len(base)+1 : -len(ext)]  # Extract the number between
+                    index = int(number_part)
+                    max_index = max(max_index, index)
+                except ValueError:
+                    continue  # Skip files that don't follow the pattern
+        
+        filename = os.path.join(folder, f"{base}_{max_index + 1}{ext}")
+        pygame.image.save(self.screen, filename)
+        print(f"\033[94mScreenshot saved as {filename}!\033[0m")
     
     # MARK: _handle_sigint
     def _handle_sigint(self, *args) -> None:
