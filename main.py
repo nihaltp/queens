@@ -11,9 +11,10 @@ import os
 # Hide the Pygame support prompt
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
-import os
 import sys
 import signal
+
+from boards.load_board import load_board
 
 try:
     import pygame
@@ -54,9 +55,10 @@ class solver:
         self.BUTTON_MARGIN_X: int = self.BUTTON_WIDTH // 4
         self.BUTTON_MARGIN_Y: int = self.BUTTON_HEIGHT // 2
         
-        self.buttons: tuple[str, ...] = ("Simulation", "Manual")
+        self.buttons       : tuple[str, ...] = ("Simulation", "Manual")
         self.manual_buttons: tuple[str, ...] = ("Normal", "Colored")
-        self.positions: tuple[tuple[int, int], ...] = ((25, 50), (50 + self.BUTTON_WIDTH, 50))
+        self.load_buttons  : tuple[str, ...] = ("New_Board", "Load_Board")
+        self.positions     : tuple[tuple[int, int], ...] = ((25, 50), (50 + self.BUTTON_WIDTH, 50))
         
         self.delay: float = min(0.01, 0.3 * (0.5 ** self.board_size)) * 1000  # delay in milliseconds
         self.threats: bool = True  # show threats or not
@@ -109,8 +111,10 @@ class solver:
                 self.simulation()
             case "Normal":
                 self.manual()
-            case "Colored":
+            case "Colored_New_Board":
                 self.colored_game()
+            case "Colored_Load_Board":
+                self.colored_game(load = True)
     
     # MARK: simulation
     def simulation(self) -> None:
@@ -307,6 +311,12 @@ class solver:
                     self.draw_buttons(self.manual_buttons, positions)
                     return self.get_mode(self.manual_buttons, positions)
                 
+                if mode == "Colored":
+                    self.screen.fill(self.BACKGROUND)
+                    self.draw_buttons(self.load_buttons, positions)
+                    load_mode: str = self.get_mode(self.load_buttons, positions)
+                    return f"Colored_{load_mode}"
+                
                 return mode
     
     # MARK: draw_buttons
@@ -452,7 +462,11 @@ class solver:
             self.draw_board(self.board)
     
     # MARK: colored_game
-    def colored_game(self, color_board: bool = True) -> None:
+    def colored_game(self, color_board: bool = True, load: bool = False) -> None:
+        """
+        Colored Queens Solver (LinkedIn Queens Solver)
+        """
+        
         """
         Create a 2D list to represent the color board, if it has not been made already.
         The color board will be of size board_size x board_size.
@@ -519,6 +533,9 @@ class solver:
         self.screen.fill(self.BACKGROUND)  # draw the background
         
         self.color_selected: int = 0
+        
+        if color_board and load:
+            self.color_board = load_board(self.board_size)
         
         self.update_color_board()
         self.solve_color_board()
