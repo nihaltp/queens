@@ -15,6 +15,7 @@ import sys
 import signal
 
 from boards.load_board import load_board
+from boards.save_board import save_board
 
 try:
     import pygame
@@ -964,6 +965,8 @@ class solver:
             print("\033[91mNo solutions were found.\033[0m")
         print("\033[93mExiting the game...\033[0m")
         pygame.quit()
+        if self.color_board:
+            save_board(self.board_size, self.color_board)
         sys.exit(error)
 
 
