@@ -965,7 +965,7 @@ class solver:
             print("\033[91mNo solutions were found.\033[0m")
         print("\033[93mExiting the game...\033[0m")
         pygame.quit()
-        if self.color_board:
+        if hasattr(self, 'color_board') and self.color_board:
             save_board(self.board_size, self.color_board)
         sys.exit(error)
 
