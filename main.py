@@ -224,7 +224,7 @@ class solver:
         self.screen.blit(s, square_rect.topleft)
     
     # MARK: handle_events
-    def handle_events(self, events = None) -> None:
+    def handle_events(self, events: list["pygame.event.Event"] | None = None) -> None:
         """Handle user input events."""
         if events is None:
             events = pygame.event.get()
@@ -235,7 +235,7 @@ class solver:
             elif event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_ESCAPE, pygame.K_q]:
                     self._quit_game(0)
-                if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                if (event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL):
                     self._quit_game(0)
                 elif event.key == pygame.K_UP:
                     self.delay *= 2
@@ -246,8 +246,22 @@ class solver:
                 elif event.key == pygame.K_t:
                     self.threats = not self.threats
                     print(f"\033[93mShow threats: {self.threats}\033[0m")
+                    if self.GAME_MODE == "Colored":
+                        self.draw_color_board()
+                    elif self.GAME_MODE == "Normal":
+                        self.draw_board(self.board)
+                    else:
+                        self.draw_board(self.user_board)
                 elif event.key == pygame.K_s:
                     self.take_screenshot()
+                elif event.key == pygame.K_r:
+                    # Change the colour board to something else
+                    if hasattr(self, 'color_board') and self.color_board:
+                        options: tuple[str, ...] = ("YES", "NO")
+                        reload: str = self.get_mode(options, self.positions, "Do you want to reload the color board?")
+                        self.screen.fill(self.BACKGROUND)  # clear the background
+                        choise: bool = True if reload == "YES" else False
+                        self.colored_game(color_board = choise, load = choise)
     
     # MARK: input_num
     def input_num(self, prompt: str, position: tuple, limit: int) -> int:
@@ -288,9 +302,16 @@ class solver:
         return current_num
     
     # MARK: get_mode
-    def get_mode(self, buttons: tuple[str, ...], positions: tuple[tuple[int, int], ...]) -> str:
+    def get_mode(self, buttons: tuple[str, ...], positions: tuple[tuple[int, int], ...], text: str | None = None) -> str:
         """Get the game mode"""
         self.screen.fill(self.BACKGROUND)
+        
+        if text != None:
+            text_render = self.FONT.render(text, True, self.BLACK)
+            text_rect = text_render.get_rect(topleft = (self.SQUARE_WIDTH / 2, self.SQUARE_WIDTH / 2))
+            self.screen.blit(text_render, text_rect)
+            pygame.display.flip()
+        
         self.draw_buttons(buttons, positions)
         mode: str = ""
         
