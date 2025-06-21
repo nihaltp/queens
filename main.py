@@ -288,20 +288,24 @@ class solver:
         return current_num
     
     # MARK: get_mode
-    def get_mode(self, buttons: tuple, positions: tuple) -> str:
+    def get_mode(self, buttons: tuple[str, ...], positions: tuple[tuple[int, int], ...]) -> str:
         """Get the game mode"""
         self.screen.fill(self.BACKGROUND)
         self.draw_buttons(buttons, positions)
+        mode: str = ""
         
         while True:
             events = pygame.event.get()
             self.handle_events(events)
             
             for event in events:
-                if event.type != pygame.MOUSEBUTTONDOWN:
-                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.unicode.isdigit():
+                        if event.unicode <= str(len(buttons)):
+                            mode = buttons[int(event.unicode) - 1]
                 
-                mode = self.handle_buttons(buttons, positions)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mode = self.handle_buttons(buttons, positions)
                 
                 # return if it is not None
                 if mode in ["", None]:
